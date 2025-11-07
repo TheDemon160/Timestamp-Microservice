@@ -1,48 +1,48 @@
-//Grab modules
-var express = require('express');
-var app = express();
-var moment = require("moment");
+// index.js
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const app = express();
 
-//Set port
-var port = process.env.PORT || 8080;
-
-//Middleware
+app.use(cors({ optionsSuccessStatus: 200 }));
 app.use(express.static('public'));
 
-//Routes
-app.get('/:datestring', function (req, res) {
-
-  //If user includes unix timestamp at the end of url
-  if (moment.unix(Number(req.params.datestring)).isValid()) {
-
-    //Display Unix and convert to Natural date 
-    var object = {
-      'unix': Number(req.params.datestring),
-      'natural': moment.unix(Number(req.params.datestring)).format('MMMM Do YYYY')
-    }
-  }
-
-  //If user includes natural language date at the end of url 
-  else if (((moment(decodeURIComponent(req.params.datestring)).format('X')) !== "Invalid date") === true) {
-
-    //Display Natural Language date and convert to unix  
-    var object = {
-      'unix': Number(moment(decodeURIComponent(req.params.datestring)).format('X')),
-      'natural': decodeURIComponent(req.params.datestring)
-    }
-  }
-
-  //If user put invalid date return empty object 
-  else {
-    var object = {
-      "unix": null,
-      'natural': null
-    }
-  }
-
-  //Send response 
-  res.send(JSON.stringify(object));
+// Página inicial (opcional, FCC no la testea)
+app.get("/", (req, res) => {
+  res.sendFile(__dirname + "/views/index.html");
 });
 
-//Listen on port 
-app.listen(port); 
+// === Timestamp API ===
+app.get("/api/:date?", (req, res) => {
+  let dateParam = req.params.date;
+  let date;
+
+  // Si no hay parámetro → fecha actual
+  if (!dateParam) {
+    date = new Date();
+  } 
+  // Si el parámetro es solo números → timestamp en milisegundos
+  else if (!isNaN(dateParam)) {
+    date = new Date(parseInt(dateParam));
+  } 
+  // Sino → intentar parsear string
+  else {
+    date = new Date(dateParam);
+  }
+
+  // Validar si la fecha es válida
+  if (date.toString() === "Invalid Date") {
+    return res.json({ error: "Invalid Date" });
+  }
+
+  // Devolver JSON con unix y utc
+  res.json({
+    unix: date.getTime(),
+    utc: date.toUTCString()
+  });
+});
+
+// Iniciar servidor
+const listener = app.listen(process.env.PORT || 3000, () => {
+  console.log("Your app is listening on port " + listener.address().port);
+});
