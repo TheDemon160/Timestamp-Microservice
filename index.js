@@ -1,48 +1,48 @@
-// index.js
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+
 const app = express();
-
 app.use(cors({ optionsSuccessStatus: 200 }));
-app.use(express.static('public'));
 
-// Página inicial (opcional, FCC no la testea)
-app.get("/", (req, res) => {
-  res.sendFile(__dirname + "/views/index.html");
+app.get('/', (req, res) => {
+  res.send(`
+    <h1>Timestamp Microservice</h1>
+    <p>Uso: GET /api/timestamp/:date_string?</p>
+    <p>Ejemplos: <code>/api/timestamp</code>, <code>/api/timestamp/2015-12-25</code>, <code>/api/timestamp/1451001600000</code></p>
+  `);
 });
 
-// === Timestamp API ===
-app.get("/api/:date?", (req, res) => {
-  let dateParam = req.params.date;
-  let date;
+app.get('/api/timestamp/:date?', (req, res) => {
+  const { date: dateParam } = req.params;
+  let dateObj;
 
-  // Si no hay parámetro → fecha actual
   if (!dateParam) {
-    date = new Date();
-  } 
-  // Si el parámetro es solo números → timestamp en milisegundos
-  else if (!isNaN(dateParam)) {
-    date = new Date(parseInt(dateParam));
-  } 
-  // Sino → intentar parsear string
-  else {
-    date = new Date(dateParam);
+    dateObj = new Date();
+  } else {
+    if (/^\d+$/.test(dateParam)) {
+      if (dateParam.length === 13) {
+        dateObj = new Date(Number(dateParam));
+      } else if (dateParam.length === 10) {
+        dateObj = new Date(Number(dateParam) * 1000);
+      } else {
+        dateObj = new Date(Number(dateParam));
+      }
+    } else {
+      dateObj = new Date(dateParam);
+    }
   }
 
-  // Validar si la fecha es válida
-  if (date.toString() === "Invalid Date") {
-    return res.json({ error: "Invalid Date" });
+  if (dateObj.toString() === 'Invalid Date') {
+    return res.json({ error: 'Invalid Date' });
   }
 
-  // Devolver JSON con unix y utc
-  res.json({
-    unix: date.getTime(),
-    utc: date.toUTCString()
+  return res.json({
+    unix: dateObj.getTime(),
+    utc: dateObj.toUTCString()
   });
 });
 
-// Iniciar servidor
-const listener = app.listen(process.env.PORT || 3000, () => {
-  console.log("Your app is listening on port " + listener.address().port);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
 });
